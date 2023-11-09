@@ -1,7 +1,7 @@
 ---
-title: "Amandafw-Data-Replication-Assignment"
+title: "data-replication-assignment"
 author: "Amanda Wu"
-date: "2023-11-09"
+date: "2023-11-08"
 output: html_document
 ---
 
@@ -9,22 +9,76 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+```{r uploading data}
+library(readr)
+library(curl)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+setwd("/Users/amandawu/Downloads/doi_10-4") # setting the working directory 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_2019_2020.csv") # uploading the camera trap data from 2019 - 2020
+camera_trap_data <- read.csv(f, header = TRUE, sep = ",")
+head(camera_trap_data)
 
-```{r cars}
-summary(cars)
+f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_flowerstrips_1m.csv") 
+flowerstrips1m <- read.csv(f, header = TRUE, sep = ",")
+head(flowerstrips1m)
+
+f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_flowerstrips_all.csv") 
+flowerstripsALL <- read.csv(f, header = TRUE, sep = ",")
+head(flowerstripsALL)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+```{r finding mean}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+my_data <- as_tibble(camera_trap_data)
+predator <- my_data %>% select(25:33)
+predator
+colnames(predator)
+names <- predator %>% 
+  rename(
+    Badger = badger_100,
+    Boar = boar_100,
+    Cat = cats_100,
+    Dog = dog_100,
+    Fox = fox_100,
+    Marten = marten_100,
+    MouseWeasel = mouseweasel_100,
+    Racoon = racoon_100,
+    Stoat = stoat_100
+  )
+colnames(names)
+long <- names %>%
+  gather(Predator, Captures)
+
+summary(long$Predator)
+
+p <- ggplot(long, aes(reorder(Predator, Captures), Captures)) +
+  stat_summary(geom = "point", fun.y = mean) +
+  ylab("captures/100 days") +
+  xlab("Predator Species") +
+  expand_limits(y = 30) +
+  geom_errorbar(aes(ymin = Captures - ci, ymax = Captures + ci), colour="black", width=.1) 
+p  
+
+
+
+
+ggplot(data = camera_trap_data$badger_100~stoat_100, aes("predator species", "captures/100 days"))p<-ggplot(df, aes(x=Category, y=Mean, fill=Quality)) +  
+  geom_point()+ 
+  geom_errorbar(aes(ymin=Mean-sd, ymax=Mean+sd), width=.2, 
+                position=position_dodge(0.05)) 
+  
+p
+
+
+p <- ggplot(data = camera_trap_data, aes(x = (badger_100,, y = mean(badger_100)))  #define the variables
+p <- p + geom_point()  #graph them in a boxplot
+p <- p + theme(axis.text.x = element_text(angle = 90))  #put x-axis names at 90deg
+p <- p + ylab("captures/100 days")  #rename y-axis title
+p  #show me the graph
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
