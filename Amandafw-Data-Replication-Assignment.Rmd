@@ -11,7 +11,9 @@ output:
     theme: lumen
 ---
 
+# Introduction
 
+# Packages
 Here is a list of packages I've downloaded for this replication project. 
 ```{r packages}
 library(readr)
@@ -19,12 +21,14 @@ library(curl)
 library(tidyverse)
 library(dplyr)
 library(ggpubr)
+library(knitr)
 # these packages were mentioned within the paper for their statistical analysis 
 library(stats)
 library(ggplot2)
 library(ggeffects)
 ```
 
+# Data
 This is the data provided from the paper. 
 ```{r uploading data}
 # uploading the camera trap data from 2019 - 2020 for predator activity within the landscape analysis
@@ -40,6 +44,9 @@ f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication
 flowerstripsALL <- read.csv(f, header = TRUE, sep = ",")
 head(flowerstripsALL)
 ```
+
+# Descriptive Statistic
+
 For my descriptive statistic, I will be replicating Table A7 which calculates the mean capture rates of all predators in each vegetation type. It also calculates the SD and 95% CI. 
 ```{r Descriptive Stat}
 # first, I calculated the summary stats with one column to see what I need to include in order to get the values. 
@@ -157,8 +164,14 @@ final
 
 completetable <- rbind(ordered2, final)
 completetable
+completetable[, sapply(completetable, is.numeric)] <- round(completetable[, sapply(completetable, is.numeric)], 3)
+
+final_table <- completetable[, !names(completetable) %in% c("count","confint_lower","confint_upper")]
+
+kable(final_table)
 ```
 
+# Figure Replication
 This is my replication of Figure 3 from the paper, showing mean capture rates of all predators in different vegetation types. 
 
 ![]("/Users/amandawu/Desktop/AN588/Figure3.png")
@@ -173,6 +186,8 @@ p <- ggplot(camera_trap_data, aes(x=reorder(Vegetation, allpredators_without_dog
   theme(axis.title = element_text(face = "bold"))
 p
 ```
+
+# Inferential Statistic
 
 Performing a Kruskal-Wallis ran sum test of predator capture rates within each vegetation type. 
 ```{r finding mean}
