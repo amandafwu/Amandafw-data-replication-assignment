@@ -300,7 +300,19 @@ predator
 
 
 ## Sources: 
+  + [replication paper](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.9027#ece39027-tbl-0107) 
   + [how to reorder the x-axis](https://stackoverflow.com/questions/3744178/ggplot2-sorting-a-plot)
   + [renaming columns](https://www.datanovia.com/en/lessons/rename-data-frame-columns-in-r/)
   + [plotting average values of certain columns in ggplot](https://stackoverflow.com/questions/58415083/plotting-average-values-from-multiple-columns-in-ggplot2)
   + [backup option](https://www.geeksforgeeks.org/plot-mean-and-standard-deviation-using-ggplot2-in-r/)
+  + [dunn's test](https://www.statology.org/dunns-test-in-r/)
+  + [rounding decimals](https://stackoverflow.com/questions/9063889/how-to-round-a-data-frame-in-r-that-contains-some-character-variables)
+  + [KW test](https://www.reneshbedre.com/blog/kruskal-wallis-test.html)
+  + [KW test](https://stackoverflow.com/questions/28813589/show-kruskal-wallis-test-ranks)
+  + [dunn test package](https://cran.r-project.org/web/packages/dunn.test/dunn.test.pdf)
+  + [dunn test table](https://stackoverflow.com/questions/28627603/how-to-create-a-table-as-dunn-test-output-r)
+  + [ggplot](http://www.sthda.com/english/wiki/ggplot2-scatter-plots-quick-start-guide-r-software-and-data-visualization)
+  + [error with $ operator](https://www.listendata.com/2022/05/r-error-operator-is-invalid-for-atomic-vectors.html)
+  + [calculating CI intervals](https://bookdown.org/logan_kelly/r_practice/p09.html)
+  + [KS test](http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r)
+  + [Dunn's Test](https://www.statology.org/dunns-test-in-r/)
