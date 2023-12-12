@@ -21,51 +21,50 @@ library(curl)
 library(tidyverse)
 library(dplyr)
 library(ggpubr)
-library(knitr)
 # these packages were mentioned within the paper for their statistical analysis 
 library(stats)
 library(ggplot2)
 library(ggeffects)
+library(FSA)
+library(knitr)
 ```
 
 # Data
 This is the data provided from the paper. 
 ```{r uploading data}
-# uploading the camera trap data from 2019 - 2020 for predator activity within the landscape analysis
+# uploading the camera trap data from 2019 - 2020 for predator activity within the landscape analysis; what I mainly used for this project
 f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_2019_2020.csv") 
 camera_trap_data <- read.csv(f, header = TRUE, sep = ",")
 head(camera_trap_data)
 
-f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_flowerstrips_1m.csv") 
-flowerstrips1m <- read.csv(f, header = TRUE, sep = ",")
-head(flowerstrips1m)
-
-f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_flowerstrips_all.csv") 
+f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_flowerstrips_all.csv") # contains camera trap sites, positions (edge or center of the flower strip) and predator observations for each camera site sampled in flower strips
 flowerstripsALL <- read.csv(f, header = TRUE, sep = ",")
 head(flowerstripsALL)
+
+f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_flowerstrips_1m.csv") # the same data as above ('camera_trap_data_flowerstrips_all.csv'), but at edge cameras, only predators that passed within 1 m of the camera were included
+flowerstrips1m <- read.csv(f, header = TRUE, sep = ",")
+head(flowerstrips1m)
 ```
 
-# Descriptive Statistic
 
+# Descriptive Statistic
 For my descriptive statistic, I will be replicating Table A7 which calculates the mean capture rates of all predators in each vegetation type. It also calculates the SD and 95% CI. 
-```{r Descriptive Stat}
+```{r Descriptive Stat - pt 1}
 # first, I calculated the summary stats with one column to see what I need to include in order to get the values. 
-all_predators_wodogs <- group_by(camera_trap_data, Vegetation) %>%
+all_predators_wodogs <- group_by(camera_trap_data, Vegetation) %>% # grouping the Vegetation types and used piping for the following sections
   summarise(
-    count = n(),
-    mean = mean(allpredators_without_dogs_100, na.rm = TRUE),
-    sd = sd(allpredators_without_dogs_100, na.rm = TRUE),
-    confint_lower = t.test(allpredators_without_dogs_100, na.rm = TRUE)$conf.int[1],
-    confint_upper = t.test(allpredators_without_dogs_100, na.rm = TRUE)$conf.int[2],
-    CI_width = ( confint_upper - confint_lower ) / 2
+    mean = mean(allpredators_without_dogs_100, na.rm = TRUE), # calculating mean
+    sd = sd(allpredators_without_dogs_100, na.rm = TRUE), # calculating sd
+    confint_lower = t.test(allpredators_without_dogs_100, na.rm = TRUE)$conf.int[1], #calculating the lower CI
+    confint_upper = t.test(allpredators_without_dogs_100, na.rm = TRUE)$conf.int[2], #calculating the upper CI
+    CI_width = ( confint_upper - confint_lower ) / 2 # typically, I would just subtract the upper with lower to get the CI value but this study seemed to have divided the CI values in half in the tables 
   )
-all_predators_wodogs
-# then, I turned it into a function so I can enter in all the columns easily
+all_predators_wodogs # matched the values from table A7 !
+# then, I turned it into a function so I can get the summaries from each column more efficiently
 summary_stats <- function(data, group, column) {
-  results <- data %>%
+  results <- data %>% 
       group_by({{group}}) %>%
       summarise(
-        count = n(),
         mean = mean({{column}}, na.rm = TRUE),
         sd = sd({{column}}, na.rm = TRUE),
         confint_lower = t.test({{column}}, na.rm = TRUE)$conf.int[1],
@@ -73,7 +72,7 @@ summary_stats <- function(data, group, column) {
         CI_width = (confint_upper - confint_lower) / 2
       ) 
 }
-# this is repetitive, entering the different columns into my function
+# this is repetitive but I'm entering all the predator columns into my function; there should be an easier way? 
 badger_stats <- summary_stats(camera_trap_data, Vegetation, badger_100)
 boar_stats <- summary_stats(camera_trap_data, Vegetation, boar_100)
 cats_stats <- summary_stats(camera_trap_data, Vegetation, cats_100)
@@ -83,7 +82,7 @@ marten_stats <- summary_stats(camera_trap_data, Vegetation, marten_100)
 mouseweasel_stats <- summary_stats(camera_trap_data, Vegetation, mouseweasel_100)
 racoon_stats <- summary_stats(camera_trap_data, Vegetation, racoon_100) 
 stoat_stats <- summary_stats(camera_trap_data, Vegetation, stoat_100)
-# binding all the rows together
+# binding all the rows together 
 table <- bind_rows(
   all_predators_wodogs,
   badger_stats,
@@ -96,33 +95,31 @@ table <- bind_rows(
   racoon_stats,
   stoat_stats
   )
-table
-# ordering all the rows for each vegetation type togeter
+table 
+# ordering all the rows for each vegetation type together
 ordered1 <- table[order(table$Vegetation), ]
 ordered1
+# adding a new column in the data set for the list of predators for each row
 ordered1$predatorname <- c("All predators", "Badger","Boar","Cats","Dog","Fox","Marten","Mouse weasel","Racoon","Stoat","All predators", "Badger","Boar","Cats","Dog","Fox","Marten","Mouse weasel","Racoon","Stoat","All predators", "Badger","Boar","Cats","Dog","Fox","Marten","Mouse weasel","Racoon","Stoat","All predators", "Badger","Boar","Cats","Dog","Fox","Marten","Mouse weasel","Racoon","Stoat","All predators", "Badger","Boar","Cats","Dog","Fox","Marten","Mouse weasel","Racoon","Stoat")
 ordered1
-
-ordered2 <- ordered1[, c("Vegetation", "predatorname", setdiff(names(ordered1), c("Vegetation", "predatorname")))]
-ordered2
+# changed the order of the columns by making "Vegetation" and "predatorname" to be the first two columns
+table1 <- ordered1[, c("Vegetation", "predatorname", setdiff(names(ordered1), c("Vegetation", "predatorname")))]
+table1
+# renamed the letters for vegetation type by reassigning the letters to their name 
 mapping <- c("B" = "Flower Strips",
              "E" = "Field Margins",
              "H" = "Hedge",
              "R" = "Rapeseed",
              "G" = "Winter Cereal")
-ordered2$Vegetation <- mapping[ordered2$Vegetation]
-ordered2
-
-ordered2[, sapply(ordered2, is.numeric)] <- round(ordered2[, sapply(ordered2, is.numeric)], 3)
-ordered2 
+table1$Vegetation <- mapping[table1$Vegetation] 
+table1 # all the values match the table ! 
 ```
 
-```{r pt2 }
-# to make the final part of the table with all vegetation types for each species, I removed group_by so it would take the mean, SD, and CI from the whole data set, ignoring vegetation
+```{r Descriptive Stat - pt 2}
+# to make the final part of the table with all vegetation types for each species, I removed group_by so it would take the mean, SD, and CI from the whole data set, ignoring vegetation type; basically the same function as before
 summary_stats2 <- function(data, column) {
   results <- data %>%
       summarise(
-        count = n(),
         mean = mean({{column}}, na.rm = TRUE),
         sd = sd({{column}}, na.rm = TRUE),
         confint_lower = t.test({{column}}, na.rm = TRUE)$conf.int[1],
@@ -141,7 +138,7 @@ marten_stat_all <- summary_stats2(camera_trap_data, marten_100)
 mouseweasel_stat_all <- summary_stats2(camera_trap_data, mouseweasel_100)
 racoon_stat_all <- summary_stats2(camera_trap_data, racoon_100)
 stoat_stat_all <- summary_stats2(camera_trap_data, stoat_100)
-# binding all the rows together
+# binding all the rows together again
 allvegtype_table <- bind_rows(
   allpred_stat_all,
   badger_stat_all,
@@ -155,42 +152,108 @@ allvegtype_table <- bind_rows(
   stoat_stat_all
   )
 allvegtype_table
-# adding the predator name column
+# adding the predator name column making sure it aligns with the functions I had entered above
 allvegtype_table$predatorname <- c("All predators", "Badger","Boar","Cats","Dog","Fox","Marten","Mouse weasel","Racoon","Stoat") 
+# also adding the column for vegetation so when we merge the data sets together, they'll have the same # of columns
 allvegtype_table$Vegetation <- c("All vegetation types", "All vegetation types","All vegetation types","All vegetation types","All vegetation types","All vegetation types","All vegetation types","All vegetation types","All vegetation types","All vegetation types") 
-# moving the predator name column to the front
-final <- allvegtype_table[, c("Vegetation", "predatorname", setdiff(names(allvegtype_table), c("Vegetation", "predatorname")))]
-final
-
-completetable <- rbind(ordered2, final)
+# moving the predator name and vegetation column to the front
+table2 <- allvegtype_table[, c("Vegetation", "predatorname", setdiff(names(allvegtype_table), c("Vegetation", "predatorname")))]
+table2
+# binding the two data sets together
+completetable <- rbind(table1, table2)
 completetable
-completetable[, sapply(completetable, is.numeric)] <- round(completetable[, sapply(completetable, is.numeric)], 3)
-
-final_table <- completetable[, !names(completetable) %in% c("count","confint_lower","confint_upper")]
-
-kable(final_table)
+# used a function to round all numerical values in the data set to three deciminals to match Table A7
+round_df <- function(df, digits) {
+  nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
+  df[,nums] <- round(df[,nums], digits = digits)
+  (df)
+}
+finaltable <- round_df(completetable, 3)
+finaltable
+# omitting the other columns that isn't in the final table
+tableA7 <- finaltable[, !names(finaltable) %in% c("confint_lower","confint_upper")]
+# using knitr to make it into a table for the html  
+kable(tableA7) 
 ```
 
+
 # Figure Replication
-This is my replication of Figure 3 from the paper, showing mean capture rates of all predators in different vegetation types. 
-
-![]("/Users/amandawu/Desktop/AN588/Figure3.png")
-
+This is my replication of Figure 3 from the paper, showing mean capture rates of all predators in different vegetation types. Figure 3 is shown below which compared mean capture rate (captures/100days) of “all predators” in different vegetation types. 
+![](Figure3.png)
 ```{r Figure 3}
+# used ggplot to make the figure; used reorder with the mean to have the vegetation types reorder by increasing order; "allpredators_without_dogs_100" is the column showing the total number of independent predator captures, excluding dogs, extrapolated to 100 active camera days (according to the README)
 p <- ggplot(camera_trap_data, aes(x=reorder(Vegetation, allpredators_without_dogs_100, FUN = mean), y=allpredators_without_dogs_100)) + 
-  stat_summary(geom = "point", fun.y = mean, shape = 15, size = 2) +
-  ylab("captures/100 days") +
-  xlab("vegetation type") +
-  stat_summary(fun.data = "mean_sdl", fun.args = list(mult = .3), geom = "errorbar", width = 0.15) +
-  scale_x_discrete(labels = c("G" = "winter cereal", "B" = "flower strip", "E" = "field margin", "R" = "rapeseed", "H" = "hedge")) +
-  theme(axis.title = element_text(face = "bold"))
+  stat_summary(geom = "point", fun.y = mean, shape = 15, size = 2) + # makes it a scatter plot and played with the sizing and shape to look closest to the original figure
+  ylab("captures/100 days") + # renaming y axis
+  xlab("vegetation type") + # renaming x axis 
+  stat_summary(fun.data = "mean_sdl", fun.args = list(mult = .3), geom = "errorbar", width = 0.15) + # added error bars and manipulated the multitude and width to best reflect the original figure; this might relate to how the CI intervals were also manipulated in the table ? 
+  scale_x_discrete(labels = c("G" = "winter cereal", "B" = "flower strip", "E" = "field margin", "R" = "rapeseed", "H" = "hedge")) + # renaming the labels in Vegetation
+  theme(axis.title = element_text(face = "bold")) # made the axis titles bold
 p
 ```
 
+
 # Inferential Statistic
 
-Performing a Kruskal-Wallis ran sum test of predator capture rates within each vegetation type. 
-```{r finding mean}
+Performing a Kruskal-Wallis rank sum test of predator capture rates within each vegetation type. A Kruskal-Wallis rank sum test is similar to a one-way ANOVA but for non-parametric data. 
+```{r Kruskal-Wallis test}
+kruskal.test(allpredators_without_dogs_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(badger_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(boar_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(cats_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(fox_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(marten_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(mouseweasel_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(racoon_100 ~ Vegetation, data = camera_trap_data)
+kruskal.test(stoat_100 ~ Vegetation, data = camera_trap_data)
+```
+
+To compare, here is the list of KW test results from the paper. The values seem to match exactly!
+![](TableA10.png)
+
+All of the p-values are also less than 0.05 so they are all significantly different. If a Kruskal-Wallis test is proven to be statistically different, then it is appropriate to conduct a Dunn's test to see exactly which predators are significant. 
+```{r Dunn test}
+badgerDT <- dunnTest(badger_100 ~ Vegetation, data = camera_trap_data, method="holm", list = TRUE)
+badgerDT
+
+mapping <- c("B - E" = "Flower Strips - Field Margins",
+            "B - G" = "Flower Strips - Winter Cereal",
+            "E - G" = "Field Margins - Winter Cereal",
+            "B - H" = "Flower Strips - Hedge",
+            "E - H" = "Field Margins - Hedge",
+            "G - H" = "Winter Cereal - Hedge",
+            "B - R" = "Flower Strips - Rapeseed",
+            "E - R" = "Field Margins - Rapeseed",
+            "G - R" = "Winter Cereal - Rapeseed",
+            "H - R" = "Hedge - Rapeseed")
+
+
+```
+
+
+
+
+
+For my descriptive analysis, the paper stated that "our data were not normally distributed (Shapiro–Wilk Test, all p < .001, Table A1)," I calculated the Shapiro-Wilk test for each predator to compare the results to Table A1.  
+```{r Table A1 junk}
+# this is calculating the Shapiro Wilk test for all predators from 2019-2020 
+animals <- as_tibble(camera_trap_data) 
+predator <- animals %>% select(25:33,35)
+results <- lapply(predator, shapiro.test)
+results
+
+
+shapiro.test(camera_trap_data$allpredators_without_dogs_100)
+shapiro.test(camera_trap_data$badger_100)
+shapiro.test(camera_trap_data$boar_100)
+shapiro.test(camera_trap_data$cats_100)
+shapiro.test(camera_trap_data$dog_100)
+shapiro.test(camera_trap_data$fox_100)
+shapiro.test(camera_trap_data$marten_100)
+shapiro.test(camera_trap_data$mouseweasel_100)
+shapiro.test(camera_trap_data$racoon_100)
+shapiro.test(camera_trap_data$stoat_100)
+
 my_data <- as_tibble(camera_trap_data)
 predator <- my_data %>% select(25:33)
 predator
@@ -233,45 +296,8 @@ predator
 
 ```
 
-For my descriptive analysis, the paper stated that "our data were not normally distributed (Shapiro–Wilk Test, all p < .001, Table A1)," I calculated the Shapiro-Wilk test for each predator to compare the results to Table A1.  
-```{r Table A1 junk}
-# this is calculating the Shapiro Wilk test for all predators from 2019-2020 
-animals <- as_tibble(camera_trap_data) 
-predator <- animals %>% select(25:33,35)
-results <- lapply(predator, shapiro.test)
-results
 
 
-shapiro.test(camera_trap_data$allpredators_without_dogs_100)
-shapiro.test(camera_trap_data$badger_100)
-shapiro.test(camera_trap_data$boar_100)
-shapiro.test(camera_trap_data$cats_100)
-shapiro.test(camera_trap_data$dog_100)
-shapiro.test(camera_trap_data$fox_100)
-shapiro.test(camera_trap_data$marten_100)
-shapiro.test(camera_trap_data$mouseweasel_100)
-shapiro.test(camera_trap_data$racoon_100)
-shapiro.test(camera_trap_data$stoat_100)
-
-```
-
-
-
-
-```{r GLMM}
-m0 <- lm(data = camera_trap_data, allpredators_100 ~ 1)
-summary(m0)
-add1(m0, scope = . ~ . + Grass_Area_500m + Forest_Area_500m, test = "F")
-
-my_data <- as_tibble(camera_trap_data)
-predator <- my_data %>% select(25:33)
-predator
-lshap <- lapply(predator, shapiro.test)
-lshap[[1]] ## look at the first column results
-lres <- sapply(lshap, `[`, c("statistic","p.value"))
-as.table(lres)
-
-```
 
 ## Sources: 
   + [how to reorder the x-axis](https://stackoverflow.com/questions/3744178/ggplot2-sorting-a-plot)
