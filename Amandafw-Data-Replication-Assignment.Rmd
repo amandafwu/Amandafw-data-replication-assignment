@@ -233,7 +233,8 @@ kruskal.test(stoat_100 ~ Vegetation, data = camera_trap_data)
 ```
 
 To compare, here is the list of KW test results from the paper. The values seem to match exactly!
-![](TableA10.png)
+
+![](TableA10.png){width=75%}
 
 All of the p-values are also less than 0.05 so they are all significantly different. However, a Kruskal-Wallis test doesn't tell you which vegetation groups are statistically different so it is important to conduct a post-hoc Dunn's test to see exactly which factors are significant. Their Dunn's test values are shown in Appendix A Table A11. 
 
