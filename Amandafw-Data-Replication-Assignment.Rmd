@@ -9,9 +9,24 @@ output:
       toc_collapsed: true
     toc_depth: 3
     theme: lumen
+indent: true
 ---
 
-# Introduction
+# Camera Trap Data Suggest Uneven Predation Risk Across Vegetation Types in a Mixed Farmland Landscape
+In this paper written by Laux, Waltert, & Gottschalk, they aim to understand the recent and rapid ground-nesting farmland birds population decline within Germany. In the last few decades, agro-biodiversity has been decreasing due to agricultural intensification (increasing field sizes, monocultures, pesticides, and fertilizers) which has led to a large loss in habitat for farmland bird species. The second major reason for this decline has been predator activity which has been increasing within Europe in recent decades as with the changes in landscape composition & habitat loss, birds are forced to nest in sub-optimal locations that are more exposed and congregated which would be more accessible to predators. 
+    
+In this study, they decided to focus on the effect of landscape composition on mammalian predator activity as it is the least understood factor. The research questions asked include:
+
+  1. Which are the main predators in farmland?
+  2. Are there differences in predator activity between vegetation types?
+  3. Which environmental parameters explain spatial variation in predator activity best?
+  4. How do predators use flower strips, one of the most popular farmland conservation measures? 
+
+Their conservation target was the Grey partridge but the results could be applied to the numerous farmland bird species within the same area faced with similar issues. Five vegetation types were found to be most important to grey partridges: flower strips, hedges, field margins, winter cereal, & rapeseed fields. To analyze predation risk, they used 120 camera traps placed evenly and randomly between the five vegetation types. Predator activity was measured by the number of predator captures at each camera site. Consecutive records of the same species at the same site had to be 10 minutes apart to be considered independent captures, except when the individuals could be identified. 
+
+![Map of the study area with the villages Diemarden and Nesselröden](map.png){width=50%}
+<br>
+For my replication project, I aim to calculate the mean capture rates, standard deviation, and confidence intervals for all the predator species within each vegetation type. Their calculated values were shown in Appendix A, Table A7. Then, I'll calculate the Kruskal-Wallis rank sum test for predator capture rates (captures/100 camera days) between vegetation types. Their values are shown in Appendix A, Table A10. After the Kruskal Wallis tests, I'll calculate the post-hoc Dunn's Test to show the significant relationships between vegetation types for each species. This is shown in Appendix A, Table A11. Lastly, I'll replication Figure 3 in the paper which shows mean capture rates of all predators in different vegetation types. 
 
 # Packages
 Here is a list of packages I've downloaded for this replication project. 
@@ -21,7 +36,8 @@ library(curl)
 library(tidyverse)
 library(dplyr)
 library(ggpubr)
-# these packages were mentioned within the paper for their statistical analysis 
+library(rcompanion)
+# these packages below were mentioned within the paper for their statistical analysis 
 library(stats)
 library(ggplot2)
 library(ggeffects)
@@ -30,7 +46,7 @@ library(knitr)
 ```
 
 # Data
-This is the data provided from the paper. 
+This is the data provided from the study as part of their open data. Within their study, they also focused on predator activity in flower strips as these habitats are farmland conservation methods of creating more habitats for farmland birds. However, for my replication, I focused on comparing predation activity among all vegetation types which is recorded in the first data set. 
 ```{r uploading data}
 # uploading the camera trap data from 2019 - 2020 for predator activity within the landscape analysis; what I mainly used for this project
 f <- curl("https://raw.githubusercontent.com/amandafwu/Amandafw-data-replication-assignment/main/camera_trap_data_2019_2020.csv") 
@@ -177,26 +193,34 @@ kable(tableA7)
 ```
 
 
-# Figure Replication
-This is my replication of Figure 3 from the paper, showing mean capture rates of all predators in different vegetation types. Figure 3 is shown below which compared mean capture rate (captures/100days) of “all predators” in different vegetation types. 
-![](Figure3.png)
-```{r Figure 3}
-# used ggplot to make the figure; used reorder with the mean to have the vegetation types reorder by increasing order; "allpredators_without_dogs_100" is the column showing the total number of independent predator captures, excluding dogs, extrapolated to 100 active camera days (according to the README)
-p <- ggplot(camera_trap_data, aes(x=reorder(Vegetation, allpredators_without_dogs_100, FUN = mean), y=allpredators_without_dogs_100)) + 
-  stat_summary(geom = "point", fun.y = mean, shape = 15, size = 2) + # makes it a scatter plot and played with the sizing and shape to look closest to the original figure
-  ylab("captures/100 days") + # renaming y axis
-  xlab("vegetation type") + # renaming x axis 
-  stat_summary(fun.data = "mean_sdl", fun.args = list(mult = .3), geom = "errorbar", width = 0.15) + # added error bars and manipulated the multitude and width to best reflect the original figure; this might relate to how the CI intervals were also manipulated in the table ? 
-  scale_x_discrete(labels = c("G" = "winter cereal", "B" = "flower strip", "E" = "field margin", "R" = "rapeseed", "H" = "hedge")) + # renaming the labels in Vegetation
-  theme(axis.title = element_text(face = "bold")) # made the axis titles bold
-p
-```
-
-
 # Inferential Statistic
 
-Performing a Kruskal-Wallis rank sum test of predator capture rates within each vegetation type. A Kruskal-Wallis rank sum test is similar to a one-way ANOVA but for non-parametric data. 
+Performing a Kruskal-Wallis rank sum test of predator capture rates within each vegetation type. A Kruskal-Wallis rank sum test is similar to a one-way ANOVA but for non-parametric data. However, before you conduct a Kruskal-Wallis test, you should first test to see whether the data is normally distributed to determine whether non-parametric tests are necessary. The paper stated that "our data were not normally distributed (Shapiro–Wilk Test, all p < .001, Table A1)," I replicated their Shapiro-Wilk calculations for each predator to compare the results to Table A1.  
+
+
+## Shapiro-Wilk Test
+```{r Shapiro Wilk}
+# again, this can look repetitive but I wasn't sure how to conduct tests through piping on different columsn within a data set yet
+shapiro.test(camera_trap_data$allpredators_without_dogs_100)
+shapiro.test(camera_trap_data$badger_100)
+shapiro.test(camera_trap_data$boar_100)
+shapiro.test(camera_trap_data$cats_100)
+shapiro.test(camera_trap_data$dog_100)
+shapiro.test(camera_trap_data$fox_100)
+shapiro.test(camera_trap_data$marten_100)
+shapiro.test(camera_trap_data$mouseweasel_100)
+shapiro.test(camera_trap_data$racoon_100)
+shapiro.test(camera_trap_data$stoat_100)
+```
+
+As seen from the tests, all the p-values are very very low (<0.05) so none of the columns are normally distributed. This should be obvious though as species are hardly ever normally distributed in the wild. If you'd like more information about the Shapiro-Wilk test, my group made a Goodness-of-Fit module with this topic!
+
+
+## Kruskal-Wallis rank sum test
+
+Once it is confirmed that the data is not normally distributed, the Kruskal-Wallis test is used to compare all vegetation types with each predator species and overall with all predators. Their Kruskal-Wallis test values are shown in Appendix A Table A10.  
 ```{r Kruskal-Wallis test}
+# you put the species first because you are analyzing the species relation to each vegetation type
 kruskal.test(allpredators_without_dogs_100 ~ Vegetation, data = camera_trap_data)
 kruskal.test(badger_100 ~ Vegetation, data = camera_trap_data)
 kruskal.test(boar_100 ~ Vegetation, data = camera_trap_data)
@@ -211,91 +235,105 @@ kruskal.test(stoat_100 ~ Vegetation, data = camera_trap_data)
 To compare, here is the list of KW test results from the paper. The values seem to match exactly!
 ![](TableA10.png)
 
-All of the p-values are also less than 0.05 so they are all significantly different. If a Kruskal-Wallis test is proven to be statistically different, then it is appropriate to conduct a Dunn's test to see exactly which predators are significant. 
+All of the p-values are also less than 0.05 so they are all significantly different. However, a Kruskal-Wallis test doesn't tell you which vegetation groups are statistically different so it is important to conduct a post-hoc Dunn's test to see exactly which factors are significant. Their Dunn's test values are shown in Appendix A Table A11. 
+
+## Dunn's test
+
 ```{r Dunn test}
-badgerDT <- dunnTest(badger_100 ~ Vegetation, data = camera_trap_data, method="holm", list = TRUE)
+# Initally when I performed the Dunn's Test, it would give me the values but it was hard to read because the values in Vegetation weren't named by their actual location so I decided to change the name first for more ease of analysis
+names(camera_trap_data) # see the names of columns again
+camera_trap_data_DT <- camera_trap_data %>%
+  mutate(Vegetation = case_when(
+    Vegetation == "B" ~ "Flower Strips",
+    Vegetation == "E" ~ "Field Margins",
+    Vegetation == "H" ~ "Hedge",
+    Vegetation == "R" ~ "Rapeseed",
+    Vegetation == "G" ~ "Winter Cereal",
+    TRUE ~ as.character(Vegetation) # Keep other values unchanged
+  ))
+head(camera_trap_data_DT)
+
+# this is an initial test where I calculate the Dunn's test values on badgers first to see if my code and values match 
+badgerDT <- dunnTest(badger_100 ~ Vegetation, data = camera_trap_data_DT, method="holm", list = TRUE) # function I found for Dunn's Test
 badgerDT
+str(badgerDT) # seeing how the test outputs are presented so I can manipulate the data
+new_badgerDT <- badgerDT$res[, !names(badgerDT$res) %in% c("P.unadj")] # within the results, I called the names of the columns and took 
+new_badgerDT 
 
-mapping <- c("B - E" = "Flower Strips - Field Margins",
-            "B - G" = "Flower Strips - Winter Cereal",
-            "E - G" = "Field Margins - Winter Cereal",
-            "B - H" = "Flower Strips - Hedge",
-            "E - H" = "Field Margins - Hedge",
-            "G - H" = "Winter Cereal - Hedge",
-            "B - R" = "Flower Strips - Rapeseed",
-            "E - R" = "Field Margins - Rapeseed",
-            "G - R" = "Winter Cereal - Rapeseed",
-            "H - R" = "Hedge - Rapeseed")
+# made a function to get the z-value and adj P to get the other values
+dunns_test <- function(data, species) {
+  dt_result <- dunnTest(data[[species]] ~ Vegetation, data = data, method = "holm", list = TRUE) # same code as above
+    final <- dt_result$res[, !names(dt_result$res) %in% c("P.unadj")] # same code as above
+  return(final)
+}
+# running the function with every column
+apdt <- dunns_test(camera_trap_data_DT, "allpredators_without_dogs_100")
+bdt <- dunns_test(camera_trap_data_DT, "badger_100")
+bodt <- dunns_test(camera_trap_data_DT, "boar_100")
+cdt <- dunns_test(camera_trap_data_DT, "cats_100")
+fdt <- dunns_test(camera_trap_data_DT, "fox_100")
+mdt <- dunns_test(camera_trap_data_DT, "marten_100")
+mwdt <- dunns_test(camera_trap_data_DT, "mouseweasel_100")
+rdt <- dunns_test(camera_trap_data_DT, "racoon_100")
+sdt <- dunns_test(camera_trap_data_DT, "stoat_100")
 
+# binding everything together
+tabledt <- bind_rows(apdt, bdt, bodt, cdt, fdt, mdt, mwdt, rdt, sdt)
+# making a new column to label each row within the new table
+predator <- c("All predators", "All predators", "All predators", "All predators", "All predators", "All predators", "All predators", "All predators", "All predators", "All predators", "badger","badger","badger","badger","badger","badger","badger","badger","badger","badger", "boar", "boar", "boar", "boar", "boar", "boar", "boar", "boar", "boar", "boar", "cats", "cats", "cats", "cats", "cats", "cats", "cats", "cats", "cats", "cats", "fox", "fox", "fox", "fox", "fox", "fox", "fox", "fox", "fox", "fox", "marten", "marten", "marten", "marten", "marten", "marten", "marten", "marten", "marten", "marten", "mouse weasel", "mouse weasel", "mouse weasel", "mouse weasel", "mouse weasel", "mouse weasel", "mouse weasel", "mouse weasel", "mouse weasel", "mouse weasel", "racoon", "racoon", "racoon", "racoon", "racoon", "racoon", "racoon", "racoon", "racoon", "racoon", "stoat","stoat","stoat","stoat","stoat","stoat","stoat","stoat","stoat","stoat")
+tabledt$predator <- predator # adding the new column
+# reordering it to be in front
+A11 <- tabledt[, c("predator", setdiff(names(tabledt), "predator"))]
+A11
+```
+
+All of my values reflect the values from Table A11 which is amazing! From replicating tables A7, A10, and A11, these are some of comparisons they have made: 
+
+"The number of predator captures in flower strips (mean 19.09 SD 23.23) was significantly lower than in hedges (mean 87.93, SD 151.62) and rapeseed fields (mean 56.88, SD 55.88) and also less than in field margins, although this difference was not significant (Tables A7, A10, A11). A similar pattern between vegetation types was observed for foxes, although only the differences between winter cereal and the other vegetation types were significant (Tables A7, A10, A11)." 
+
+
+# Figure Replication
+
+This is my replication of Figure 3 from the paper, showing mean capture rates of all predators in different vegetation types. Figure 3 is shown below which compared mean capture rate (captures/100days) of “all predators” in different vegetation types. 
+
+![](Figure3.png)
+
+```{r Figure 3}
+# used ggplot to make the figure; used reorder with the mean to have the vegetation types reorder by increasing order; "allpredators_without_dogs_100" is the column showing the total number of independent predator captures, excluding dogs, extrapolated to 100 active camera days (according to the README)
+p <- ggplot(camera_trap_data, aes(x=reorder(Vegetation, allpredators_without_dogs_100, FUN = mean), y=allpredators_without_dogs_100)) + 
+  stat_summary(geom = "point", fun.y = mean, shape = 15, size = 2) + # makes it a scatter plot and played with the sizing and shape to look closest to the original figure
+  ylab("captures/100 days") + # renaming y axis
+  xlab("vegetation type") + # renaming x axis 
+  stat_summary(fun.data = "mean_sdl", fun.args = list(mult = .3), geom = "errorbar", width = 0.15) + # added error bars and manipulated the multitude and width to best reflect the original figure; this might relate to how the CI intervals were also manipulated in the table ? 
+  scale_x_discrete(labels = c("G" = "winter cereal", "B" = "flower strip", "E" = "field margin", "R" = "rapeseed", "H" = "hedge")) + # renaming the labels in Vegetation
+    geom_text( aes(x = "G", y = 4, label = "b"), vjust = -0.5,
+            hjust= -1.5, size = 3) +
+    geom_text( aes(x = "B", y = 18, label = "a"), vjust = -0.5,
+            hjust= -1.5, size = 3) +
+    geom_text( aes(x = "E", y = 25, label = "a"), vjust = -0.5,
+            hjust= -1.5, size = 3) +
+    geom_text( aes(x = "R", y = 55, label = "c"), vjust = -0.5,
+            hjust= -1.5, size = 3) +
+    geom_text( aes(x = "H", y = 85, label = "c"), vjust = -0.5,
+            hjust= -1.5, size = 3) +
+  theme(axis.title = element_text(face = "bold")) # made the axis titles bold
+p
+
+# to add the post-hoc Dunn's test results into the graph I had to calculate the values first
+allpredDT <- dunnTest(allpredators_without_dogs_100 ~ Vegetation, data = camera_trap_data, method="holm", list = TRUE) # function I found for Dunn's Test
+allpredDT
+
+test <- allpredDT$res # taking out the results
+test
+# getting the letters of significance
+cld <- cldList(comparison = test$Comparison,
+        p.value    = test$P.adj,
+        threshold  = 0.05)[1:2]
+cld # matches the values from the graph !!
 
 ```
 
-
-
-
-
-For my descriptive analysis, the paper stated that "our data were not normally distributed (Shapiro–Wilk Test, all p < .001, Table A1)," I calculated the Shapiro-Wilk test for each predator to compare the results to Table A1.  
-```{r Table A1 junk}
-# this is calculating the Shapiro Wilk test for all predators from 2019-2020 
-animals <- as_tibble(camera_trap_data) 
-predator <- animals %>% select(25:33,35)
-results <- lapply(predator, shapiro.test)
-results
-
-
-shapiro.test(camera_trap_data$allpredators_without_dogs_100)
-shapiro.test(camera_trap_data$badger_100)
-shapiro.test(camera_trap_data$boar_100)
-shapiro.test(camera_trap_data$cats_100)
-shapiro.test(camera_trap_data$dog_100)
-shapiro.test(camera_trap_data$fox_100)
-shapiro.test(camera_trap_data$marten_100)
-shapiro.test(camera_trap_data$mouseweasel_100)
-shapiro.test(camera_trap_data$racoon_100)
-shapiro.test(camera_trap_data$stoat_100)
-
-my_data <- as_tibble(camera_trap_data)
-predator <- my_data %>% select(25:33)
-predator
-
-colnames(predator)
-names <- predator %>% 
-  rename(
-    Badger = badger_100,
-    Boar = boar_100,
-    Cat = cats_100,
-    Dog = dog_100,
-    Fox = fox_100,
-    Marten = marten_100,
-    MouseWeasel = mouseweasel_100,
-    Racoon = racoon_100,
-    Stoat = stoat_100
-  )
-colnames(names)
-long <- names %>%
-  gather(Predator, Captures)
-
-
-p <- ggplot(long, aes(reorder(Predator, Captures), Captures)) +
-  stat_summary(geom = "point", fun.y = mean) +
-  ylab("captures/100 days") +
-  xlab("Predator Species") +
-  expand_limits(y = c(0,30)) 
-
-p  
-
-sd(predator$badger_100)
-mean(predator$badger_100)
-
-
-
-head(predator)
-class(predator$badger_100)
-class(long$Captures)
-predator
-
-```
-
+Although I was able to get the CLD letters from the Dunn's Test, adding it into the graph was unexpectedly difficult as the length of the data in CLD$Letter was only 5 but the length of the whole data set was 240. I couldn't change the length too much as changing the length of the graph's data would mess up the error bars so I ended up manually placing the letters onto the graph with geom_text. To prove I got the same CLD letters as the paper, I calculated it with cldList. 
 
 
 
@@ -316,3 +354,11 @@ predator
   + [calculating CI intervals](https://bookdown.org/logan_kelly/r_practice/p09.html)
   + [KS test](http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r)
   + [Dunn's Test](https://www.statology.org/dunns-test-in-r/)
+  + [CLD](https://stackoverflow.com/questions/76857140/compact-letter-display-for-kruskal-wallis-dunn-post-hoc-test-on-r)
+  + [CLD placement](https://statdoe.com/cld-customisation/)
+  + [adding text to graph](http://www.sthda.com/english/wiki/ggplot2-texts-add-text-annotations-to-a-graph-in-r-software)
+  + [moving columns](https://www.geeksforgeeks.org/move-column-to-first-position-of-dataframe-in-r/)
+  + [CLD for dunns](https://stackoverflow.com/questions/76948847/obtaining-significance-letters-multcompview-while-performing-dunns-test)
+  + [%in% operator](https://www.marsja.se/how-to-use-in-in-r/)
+  + [dplyr case_when](https://www.sharpsightlabs.com/blog/case-when-r/)
+  
